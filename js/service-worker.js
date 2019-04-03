@@ -1,34 +1,47 @@
-var CACHE_NAME = 'api-google-maps';
-var urlsToCache = [
-  '/',
-  '../css/api.css',
-  '../index.html'
-];
-
-self.addEventListener('install', function(event) {
-  // Perform install steps
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(function(cache) {
-        return cache.addAll(urlsToCache);
-      })
-  );
-});
-
-self.addEventListener('activate', function(event) {
-  console.log('Finally active. Ready to start serving content!');
-});
-
-self.addEventListener('fetch', function(event) {
-  event.respondWith(
-    caches.match(event.request)
-      .then(function(response) {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
-      }
-    )
-  );
-});
+const cacheName = 'api-google-maps';
+const staticAssets = [
+    './',
+    './api.js',
+    '../css/api.css',
+    '../index.html'
+  ];
+  
+  self.addEventListener('install', async e => {
+    const cache = await caches.open(cacheName);
+    await cache.addAll(staticAssets);
+    return self.skipWaiting();
+  });
+  
+  self.addEventListener('activate', e => {
+    self.clients.claim();
+  });
+  
+  self.addEventListener('fetch', async e => {
+    const req = e.request;
+    const url = new URL(req.url);
+  
+    if (url.origin === location.origin) {
+      e.respondWith(cacheFirst(req));
+    } else {
+      e.respondWith(networkAndCache(req));
+    }
+  });
+  
+  async function cacheFirst(req) {
+    const cache = await caches.open(cacheName);
+    const cached = await cache.match(req);
+    return cached || fetch(req);
+  }
+  
+  async function networkAndCache(req) {
+    const cache = await caches.open(cacheName);
+    try {
+      const fresh = await fetch(req);
+      await cache.put(req, fresh.clone());
+      return fresh;
+    } catch (e) {
+      const cached = await cache.match(req);
+      return cached;
+    }
+  }
+  
