@@ -1,3 +1,8 @@
+window.addEventListener('load', () => {
+  initMap();
+  registerSW();
+});
+
 var map;
 function initMap() {
     map = new google.maps.Map(document.getElementById('map'), {
@@ -12,12 +17,10 @@ function initMap() {
     });
 }
 
-registerSW();
-
 async function registerSW() {
   if ('serviceWorker' in navigator) {
     try {
-      await navigator.serviceWorker.register('./service-worker.js');
+      await navigator.serviceWorker.register('js/service-worker.js');
     } catch (e) {
       console.log(`SW registration failed`);
     }
